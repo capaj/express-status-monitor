@@ -102,8 +102,8 @@ socket.on('start', function (data) {
   data[defaultSpan].os.pop()
 
   // Bug fix for requiring browser refresh when koa-server restarted
-  var os_data = data[defaultSpan].os[data[defaultSpan].os.length - 1]
-  if(!os_data||!('cpu' in os_data)){
+  var osData = data[defaultSpan].os[data[defaultSpan].os.length - 1]
+  if (!osData || !('cpu' in osData)) {
     socket.emit('change')
     return
   }
