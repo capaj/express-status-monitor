@@ -101,6 +101,13 @@ socket.on('start', function (data) {
   data[defaultSpan].responses.pop()
   data[defaultSpan].os.pop()
 
+  // Bug fix for requiring browser refresh when koa-server restarted
+  var osData = data[defaultSpan].os[data[defaultSpan].os.length - 1]
+  if (!osData || !('cpu' in osData)) {
+    socket.emit('change')
+    return
+  }
+
   cpuStat.textContent = data[defaultSpan].os[data[defaultSpan].os.length - 1].cpu.toFixed(1) + '%'
   cpuChart.data.datasets[0].data = data[defaultSpan].os.map(function (point) {
     return point.cpu
