@@ -14,19 +14,23 @@ try {
 const defaultConfig = {
   path: '/status',
   title: appName,
-  spans: [{
-    interval: 1,
-    retention: 60
-  }, {
-    interval: 5,
-    retention: 60
-  }, {
-    interval: 15,
-    retention: 60
-  }]
+  spans: [
+    {
+      interval: 1,
+      retention: 60
+    },
+    {
+      interval: 5,
+      retention: 60
+    },
+    {
+      interval: 15,
+      retention: 60
+    }
+  ]
 }
 
-const last = function (arr) {
+const last = function(arr) {
   return arr[arr.length - 1]
 }
 
@@ -50,7 +54,7 @@ const gatherOsMetrics = (io, span) => {
     })
   }
 
-  pidusage.stat(process.pid, (err, stat) => {
+  pidusage(process.pid, (err, stat) => {
     if (err) {
       console.error(err)
       return
@@ -60,16 +64,21 @@ const gatherOsMetrics = (io, span) => {
     stat.timestamp = Date.now()
 
     span.os.push(stat)
-    if (!span.responses[0] || last(span.responses).timestamp + (span.interval * 1000) < Date.now()) span.responses.push(defaultResponse)
+    if (
+      !span.responses[0] ||
+      last(span.responses).timestamp + span.interval * 1000 < Date.now()
+    )
+      span.responses.push(defaultResponse)
 
     if (span.os.length >= span.retention) span.os.shift()
-    if (span.responses[0] && span.responses.length > span.retention) span.responses.shift()
+    if (span.responses[0] && span.responses.length > span.retention)
+      span.responses.shift()
 
     sendMetrics(span)
   })
 }
 
-const encoding = {encoding: 'utf8'}
+const encoding = { encoding: 'utf8' }
 
 const middlewareWrapper = (app, config) => {
   if (!app.listen) {
@@ -84,7 +93,7 @@ const middlewareWrapper = (app, config) => {
 
   io.on('connection', (socket) => {
     socket.emit('start', config.spans)
-    socket.on('change', function () {
+    socket.on('change', function() {
       socket.emit('start', config.spans)
     })
   })
@@ -92,45 +101,53 @@ const middlewareWrapper = (app, config) => {
   config.spans.forEach((span) => {
     span.os = []
     span.responses = []
-    const interval = setInterval(() => gatherOsMetrics(io, span), span.interval * 1000)
+    const interval = setInterval(
+      () => gatherOsMetrics(io, span),
+      span.interval * 1000
+    )
     interval.unref()
   })
   // console.log(config)
 
-  return function*(next) {
+  return async (ctx, next) => {
     const startTime = process.hrtime()
 
-    if (this.path === config.path) {
-      this.body = template(config)
-    } else if (this.url === `${config.path}/koa-monitor-frontend.js`) {
+    if (ctx.path === config.path) {
+      ctx.body = template(config)
+    } else if (ctx.url === `${config.path}/koa-monitor-frontend.js`) {
       const pathToJs = path.join(__dirname, 'koa-monitor-frontend.js')
-      this.body = yield fs.readFile(pathToJs, encoding)
+      ctx.body = await fs.readFile(pathToJs, encoding)
     } else {
       let timer
       if (config.requestTimeout) {
         timer = setTimeout(() => {
-          record.call(this, true)
+          record.call(ctx, true)
         }, config.requestTimeout)
       }
 
-      yield next
+      await next
 
       timer && clearTimeout(timer)
-      record.call(this)
+      record.call(ctx)
     }
 
-    function record (timeout) {
+    function record(timeout) {
       const diff = process.hrtime(startTime)
       const responseTime = diff[0] * 1e3 + diff[1] * 1e-6
       // if timeout, set response code to 5xx.
-      const category = timeout ? 5 : Math.floor(this.statusCode / 100)
+      const category = timeout ? 5 : Math.floor(ctx.statusCode / 100)
 
       config.spans.forEach((span) => {
         const lastResponse = last(span.responses)
-        if (lastResponse && lastResponse.timestamp / 1000 + span.interval > Date.now() / 1000) {
+        if (
+          lastResponse &&
+          lastResponse.timestamp / 1000 + span.interval > Date.now() / 1000
+        ) {
           lastResponse[category]++
           lastResponse.count++
-          lastResponse.mean = lastResponse.mean + ((responseTime - lastResponse.mean) / lastResponse.count)
+          lastResponse.mean =
+            lastResponse.mean +
+            (responseTime - lastResponse.mean) / lastResponse.count
         } else {
           span.responses.push({
             '2': category === 2 ? 1 : 0,

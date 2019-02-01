@@ -1,133 +1,132 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>{{title}} status</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.3.0/Chart.bundle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.5.0/socket.io.min.js"></script>
-  <style>
-    * {
-      font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
-    }
+  <head>
+    <title>{{title}} status</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.3.0/Chart.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.5.0/socket.io.min.js"></script>
+    <style>
+      * {
+        font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+      }
 
-    h1 {
-      font-size: 3em;
-      color: #222222;
-      margin: 0;
-    }
+      h1 {
+        font-size: 3em;
+        color: #222222;
+        margin: 0;
+      }
 
-    h5 {
-      margin: 0;
-      color: #888888;
-    }
+      h5 {
+        margin: 0;
+        color: #888888;
+      }
 
-    p {
-      font-size: 0.7em;
-      color: #888888;
-    }
+      p {
+        font-size: 0.7em;
+        color: #888888;
+      }
 
-    span {
-      cursor: pointer;
-      font-size: 10px;
-      margin-left: 5px;
-      border: 1px solid #DDD;
-      padding: 3px 10px 4px 10px;
-    }
+      span {
+        cursor: pointer;
+        font-size: 10px;
+        margin-left: 5px;
+        border: 1px solid #ddd;
+        padding: 3px 10px 4px 10px;
+      }
 
-    canvas {
-      width: 400px;
-      height: 100px;
-    }
+      canvas {
+        width: 400px;
+        height: 100px;
+      }
 
-    .active {
-      background: #eeeeee;
-    }
+      .active {
+        background: #eeeeee;
+      }
 
-    .stats-column {
-      flex: 0 0 200px;
-    }
+      .stats-column {
+        flex: 0 0 200px;
+      }
 
-    .container {
-      display: flex;
-      flex-direction: row;
-      margin-top: 20px;
-      height: 100px;
-    }
+      .container {
+        display: flex;
+        flex-direction: row;
+        margin-top: 20px;
+        height: 100px;
+      }
 
-    .chart-container {
-      width: 400px;
-      height: 100px;
-    }
+      .chart-container {
+        width: 400px;
+        height: 100px;
+      }
 
-    .footer {
-      position: fixed;
-      margin: auto;
-      text-align: center;
-      left: 0;
-      right: 0;
-      bottom: 0;
-    }
+      .footer {
+        position: fixed;
+        margin: auto;
+        text-align: center;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
 
-    .span-controls {
-      float: right;
-    }
-  </style>
-</head>
-<body>
-  <div style="width: 600px; margin: auto">
-    <div class="header">
-      <b>{{title}} Status</b>
-      <div id="span-controls" class="span-controls">
+      .span-controls {
+        float: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="width: 600px; margin: auto">
+      <div class="header">
+        <b>{{title}} Status</b>
+        <div id="span-controls" class="span-controls"></div>
+      </div>
+      <div class="container">
+        <div class="stats-column">
+          <h5>CPU Usage</h5>
+          <h1 id="cpuStat">- %</h1>
+        </div>
+        <div class="chart-container">
+          <canvas id="cpuChart" width="400" height="100"></canvas>
+        </div>
+      </div>
+      <div class="container">
+        <div class="stats-column">
+          <h5>Memory Usage</h5>
+          <h1 id="memStat">- %</h1>
+        </div>
+        <div class="chart-container">
+          <canvas id="memChart" width="200" height="100"></canvas>
+        </div>
+      </div>
+      <div class="container">
+        <div class="stats-column">
+          <h5>One Minute Load Avg</h5>
+          <h1 id="loadStat">-</h1>
+        </div>
+        <div class="chart-container">
+          <canvas id="loadChart" width="200" height="100"></canvas>
+        </div>
+      </div>
+      <div class="container">
+        <div class="stats-column">
+          <h5>Response Time</h5>
+          <h1 id="responseTimeStat">-</h1>
+        </div>
+        <div class="chart-container">
+          <canvas id="responseTimeChart" width="200" height="100"></canvas>
+        </div>
+      </div>
+      <div class="container">
+        <div class="stats-column">
+          <h5>Requests per Second</h5>
+          <h1 id="rpsStat">-</h1>
+        </div>
+        <div class="chart-container">
+          <canvas id="rpsChart" width="200" height="100"></canvas>
+        </div>
+      </div>
+      <div class="footer">
+        <p>Made with &#9829; with Socket.io & Chart.js</p>
       </div>
     </div>
-    <div class="container">
-      <div class="stats-column">
-        <h5>CPU Usage</h5>
-        <h1 id="cpuStat">- %</h1>
-      </div>
-      <div class="chart-container">
-        <canvas id="cpuChart" width="400" height="100"></canvas>
-      </div>
-    </div>
-    <div class="container">
-      <div class="stats-column">
-        <h5>Memory Usage</h5>
-        <h1 id="memStat">- %</h1>
-      </div>
-      <div class="chart-container">
-        <canvas id="memChart" width="200" height="100"></canvas>
-      </div>
-    </div>
-    <div class="container">
-      <div class="stats-column">
-        <h5>One Minute Load Avg</h5>
-        <h1 id="loadStat">-</h1>
-      </div>
-      <div class="chart-container">
-        <canvas id="loadChart" width="200" height="100"></canvas>
-      </div>
-    </div>
-    <div class="container">
-      <div class="stats-column">
-        <h5>Response Time</h5>
-        <h1 id="responseTimeStat">-</h1>
-      </div>
-      <div class="chart-container">
-        <canvas id="responseTimeChart" width="200" height="100"></canvas>
-      </div>
-    </div>
-    <div class="container">
-      <div class="stats-column">
-        <h5>Requests per Second</h5>
-        <h1 id="rpsStat">-</h1>
-      </div>
-      <div class="chart-container">
-        <canvas id="rpsChart" width="200" height="100"></canvas>
-      </div>
-    </div>
-    <div class="footer">
-      <p>Made with &#9829; with Socket.io & Chart.js</p>
-    </div>
-  </div>
-  <script src="{{path}}/koa-monitor-frontend.js"></script>
-</body>
+    <script src="{{path}}/koa-monitor-frontend.js"></script>
+  </body>
 </html>

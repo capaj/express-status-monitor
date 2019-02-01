@@ -1,17 +1,20 @@
-# koa-monitor  ![npm badge](https://nodei.co/npm/koa-monitor.png)
+# koa-monitor ![npm badge](https://nodei.co/npm/koa-monitor.png)
 
 Simple, self-hosted module based on Socket.io and Chart.js to report realtime server metrics for koa.js-based node servers.
 
-![Monitoring Page](http://i.imgur.com/AHizEWq.gif "Monitoring Page")
+![Monitoring Page](http://i.imgur.com/AHizEWq.gif 'Monitoring Page')
 
-## Installation & setup 
+## Installation & setup
+
 1. Run `npm install koa-monitor --save`
 2. Before any other middleware add following line:
+
 ```javascript
 const monitor = require('koa-monitor')
 // then after
-app.use(monitor(server, {path: '/status'}))
+app.use(monitor(server, { path: '/status' }))
 ```
+
 3. Run server and go to `/status`
 
 ## Options
@@ -19,6 +22,7 @@ app.use(monitor(server, {path: '/status'}))
 Monitor can be configured by passing options(second argument) object into `monitor` constructor.
 
 Default config:
+
 ```
 path: '/status',
 spans: [{

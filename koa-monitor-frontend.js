@@ -6,33 +6,37 @@ Chart.defaults.global.elements.line.backgroundColor = 'rgba(0,0,0,0)'
 Chart.defaults.global.elements.line.borderColor = 'rgba(0,0,0,0.9)'
 Chart.defaults.global.elements.line.borderWidth = 2
 
-var socket = io(location.protocol + '//' + location.hostname + ':' + location.port)
-var defaultSpan = 0
-var spans = []
+const socket = io(`${location.protocol}//${location.hostname}:${location.port}`)
+let defaultSpan = 0
+const spans = []
 
-var defaultDataset = {
+const defaultDataset = {
   label: '',
   data: [],
   lineTension: 0.2,
   pointRadius: 0
 }
 
-var defaultOptions = {
+const defaultOptions = {
   scales: {
-    yAxes: [{
-      ticks: {
-        beginAtZero: true
+    yAxes: [
+      {
+        ticks: {
+          beginAtZero: true
+        }
       }
-    }],
-    xAxes: [{
-      type: 'time',
-      time: {
-        unitStepSize: 30
-      },
-      gridLines: {
-        display: false
+    ],
+    xAxes: [
+      {
+        type: 'time',
+        time: {
+          unitStepSize: 30
+        },
+        gridLines: {
+          display: false
+        }
       }
-    }]
+    ]
   },
   tooltips: {
     enabled: false
@@ -42,8 +46,8 @@ var defaultOptions = {
   animation: false
 }
 
-var createChart = function (ctx, dataset) {
-  return new Chart(ctx, {
+const createChart = (ctx, dataset) =>
+  new Chart(ctx, {
     type: 'line',
     data: {
       labels: [],
@@ -51,110 +55,124 @@ var createChart = function (ctx, dataset) {
     },
     options: defaultOptions
   })
-}
 
-var addTimestamp = function (point) {
-  return point.timestamp
-}
+const addTimestamp = ({ timestamp }) => timestamp
 
-var cpuDataset = [Object.create(defaultDataset)]
-var memDataset = [Object.create(defaultDataset)]
-var loadDataset = [Object.create(defaultDataset)]
-var responseTimeDataset = [Object.create(defaultDataset)]
-var rpsDataset = [Object.create(defaultDataset)]
+const cpuDataset = [Object.create(defaultDataset)]
+const memDataset = [Object.create(defaultDataset)]
+const loadDataset = [Object.create(defaultDataset)]
+const responseTimeDataset = [Object.create(defaultDataset)]
+const rpsDataset = [Object.create(defaultDataset)]
 
-var cpuStat = document.getElementById('cpuStat')
-var memStat = document.getElementById('memStat')
-var loadStat = document.getElementById('loadStat')
-var responseTimeStat = document.getElementById('responseTimeStat')
-var rpsStat = document.getElementById('rpsStat')
+const cpuStat = document.getElementById('cpuStat')
+const memStat = document.getElementById('memStat')
+const loadStat = document.getElementById('loadStat')
+const responseTimeStat = document.getElementById('responseTimeStat')
+const rpsStat = document.getElementById('rpsStat')
 
-var cpuChartCtx = document.getElementById('cpuChart')
-var memChartCtx = document.getElementById('memChart')
-var loadChartCtx = document.getElementById('loadChart')
-var responseTimeChartCtx = document.getElementById('responseTimeChart')
-var rpsChartCtx = document.getElementById('rpsChart')
+const cpuChartCtx = document.getElementById('cpuChart')
+const memChartCtx = document.getElementById('memChart')
+const loadChartCtx = document.getElementById('loadChart')
+const responseTimeChartCtx = document.getElementById('responseTimeChart')
+const rpsChartCtx = document.getElementById('rpsChart')
 
-var cpuChart = createChart(cpuChartCtx, cpuDataset)
-var memChart = createChart(memChartCtx, memDataset)
-var loadChart = createChart(loadChartCtx, loadDataset)
-var responseTimeChart = createChart(responseTimeChartCtx, responseTimeDataset)
-var rpsChart = createChart(rpsChartCtx, rpsDataset)
+const cpuChart = createChart(cpuChartCtx, cpuDataset)
+const memChart = createChart(memChartCtx, memDataset)
+const loadChart = createChart(loadChartCtx, loadDataset)
+const responseTimeChart = createChart(responseTimeChartCtx, responseTimeDataset)
+const rpsChart = createChart(rpsChartCtx, rpsDataset)
 
-var charts = [cpuChart, memChart, loadChart, responseTimeChart, rpsChart]
+const charts = [cpuChart, memChart, loadChart, responseTimeChart, rpsChart]
 
-var onSpanChange = function (e) {
-  e.target.classList.add('active')
-  defaultSpan = parseInt(e.target.id)
+const onSpanChange = ({ target }) => {
+  target.classList.add('active')
+  defaultSpan = parseInt(target.id)
 
-  var otherSpans = document.getElementsByTagName('span')
-  for (var i = 0; i < otherSpans.length; i++) {
-    if (otherSpans[i] !== e.target) otherSpans[i].classList.remove('active')
+  const otherSpans = document.getElementsByTagName('span')
+  for (let i = 0; i < otherSpans.length; i++) {
+    if (otherSpans[i] !== target) otherSpans[i].classList.remove('active')
   }
 
   socket.emit('change')
 }
 
-socket.on('start', function (data) {
+socket.on('start', (data) => {
   // Remove last element of Array because it contains malformed responses data.
   // To keep consistency we also remove os data.
   data[defaultSpan].responses.pop()
   data[defaultSpan].os.pop()
 
   // Bug fix for requiring browser refresh when koa-server restarted
-  var osData = data[defaultSpan].os[data[defaultSpan].os.length - 1]
+  const osData = data[defaultSpan].os[data[defaultSpan].os.length - 1]
   if (!osData || !('cpu' in osData)) {
     socket.emit('change')
     return
   }
 
-  cpuStat.textContent = data[defaultSpan].os[data[defaultSpan].os.length - 1].cpu.toFixed(1) + '%'
-  cpuChart.data.datasets[0].data = data[defaultSpan].os.map(function (point) {
-    return point.cpu
-  })
+  cpuStat.textContent = `${data[defaultSpan].os[
+    data[defaultSpan].os.length - 1
+  ].cpu.toFixed(1)}%`
+  cpuChart.data.datasets[0].data = data[defaultSpan].os.map(({ cpu }) => cpu)
   cpuChart.data.labels = data[defaultSpan].os.map(addTimestamp)
 
-  memStat.textContent = data[defaultSpan].os[data[defaultSpan].os.length - 1].memory.toFixed(1) + 'MB'
-  memChart.data.datasets[0].data = data[defaultSpan].os.map(function (point) {
-    return point.memory
-  })
+  memStat.textContent = `${data[defaultSpan].os[
+    data[defaultSpan].os.length - 1
+  ].memory.toFixed(1)}MB`
+  memChart.data.datasets[0].data = data[defaultSpan].os.map(
+    ({ memory }) => memory
+  )
   memChart.data.labels = data[defaultSpan].os.map(addTimestamp)
 
-  loadStat.textContent = data[defaultSpan].os[data[defaultSpan].os.length - 1].load[defaultSpan].toFixed(2)
-  loadChart.data.datasets[0].data = data[defaultSpan].os.map(function (point) {
-    return point.load[0]
-  })
+  loadStat.textContent = data[defaultSpan].os[
+    data[defaultSpan].os.length - 1
+  ].load[defaultSpan].toFixed(2)
+  loadChart.data.datasets[0].data = data[defaultSpan].os.map(
+    ({ load }) => load[0]
+  )
   loadChart.data.labels = data[defaultSpan].os.map(addTimestamp)
 
-  responseTimeStat.textContent = data[defaultSpan].responses[data[defaultSpan].responses.length - 1].mean.toFixed(2) + 'ms'
-  responseTimeChart.data.datasets[0].data = data[defaultSpan].responses.map(function (point) {
-    return point.mean
-  })
+  responseTimeStat.textContent = `${data[defaultSpan].responses[
+    data[defaultSpan].responses.length - 1
+  ].mean.toFixed(2)}ms`
+  responseTimeChart.data.datasets[0].data = data[defaultSpan].responses.map(
+    ({ mean }) => mean
+  )
   responseTimeChart.data.labels = data[defaultSpan].responses.map(addTimestamp)
 
   if (data[defaultSpan].responses.length >= 2) {
-    var deltaTime = data[defaultSpan].responses[data[defaultSpan].responses.length - 1].timestamp - data[defaultSpan].responses[data[defaultSpan].responses.length - 2].timestamp
-    rpsStat.textContent = (data[defaultSpan].responses[data[defaultSpan].responses.length - 1].count / deltaTime * 1000).toFixed(2)
-    rpsChart.data.datasets[0].data = data[defaultSpan].responses.map(function (point) {
-      return point.count / deltaTime * 1000
-    })
+    const deltaTime =
+      data[defaultSpan].responses[data[defaultSpan].responses.length - 1]
+        .timestamp -
+      data[defaultSpan].responses[data[defaultSpan].responses.length - 2]
+        .timestamp
+    rpsStat.textContent = (
+      (data[defaultSpan].responses[data[defaultSpan].responses.length - 1]
+        .count /
+        deltaTime) *
+      1000
+    ).toFixed(2)
+    rpsChart.data.datasets[0].data = data[defaultSpan].responses.map(
+      ({ count }) => (count / deltaTime) * 1000
+    )
     rpsChart.data.labels = data[defaultSpan].responses.map(addTimestamp)
   }
 
-  charts.forEach(function (chart) {
+  charts.forEach((chart) => {
     chart.update()
   })
 
-  var spanControls = document.getElementById('span-controls')
+  const spanControls = document.getElementById('span-controls')
   if (data.length !== spans.length) {
-    data.forEach(function (span, index) {
+    data.forEach(({ retention, interval }, index) => {
       spans.push({
-        retention: span.retention,
-        interval: span.interval
+        retention: retention,
+        interval: interval
       })
 
-      var spanNode = document.createElement('span')
-      var textNode = document.createTextNode((span.retention * span.interval) / 60 + 'M')
+      const spanNode = document.createElement('span')
+      const textNode = document.createTextNode(
+        `${(retention * interval) / 60}M`
+      )
       spanNode.appendChild(textNode)
       spanNode.setAttribute('id', index)
       spanNode.onclick = onSpanChange
@@ -164,32 +182,37 @@ socket.on('start', function (data) {
   }
 })
 
-socket.on('stats', function (data) {
-  if (data.retention === spans[defaultSpan].retention && data.interval === spans[defaultSpan].interval) {
-    cpuStat.textContent = data.os.cpu.toFixed(1) + '%'
-    cpuChart.data.datasets[0].data.push(data.os.cpu)
-    cpuChart.data.labels.push(data.os.timestamp)
+socket.on('stats', ({ retention, interval, os, responses }) => {
+  if (
+    retention === spans[defaultSpan].retention &&
+    interval === spans[defaultSpan].interval
+  ) {
+    cpuStat.textContent = `${os.cpu.toFixed(1)}%`
+    cpuChart.data.datasets[0].data.push(os.cpu)
+    cpuChart.data.labels.push(os.timestamp)
 
-    memStat.textContent = data.os.memory.toFixed(1) + 'MB'
-    memChart.data.datasets[0].data.push(data.os.memory)
-    memChart.data.labels.push(data.os.timestamp)
+    memStat.textContent = `${os.memory.toFixed(1)}MB`
+    memChart.data.datasets[0].data.push(os.memory)
+    memChart.data.labels.push(os.timestamp)
 
-    loadStat.textContent = data.os.load[0].toFixed(2)
-    loadChart.data.datasets[0].data.push(data.os.load[0])
-    loadChart.data.labels.push(data.os.timestamp)
+    loadStat.textContent = os.load[0].toFixed(2)
+    loadChart.data.datasets[0].data.push(os.load[0])
+    loadChart.data.labels.push(os.timestamp)
 
-    responseTimeStat.textContent = data.responses.mean.toFixed(2) + 'ms'
-    responseTimeChart.data.datasets[0].data.push(data.responses.mean)
-    responseTimeChart.data.labels.push(data.responses.timestamp)
+    responseTimeStat.textContent = `${responses.mean.toFixed(2)}ms`
+    responseTimeChart.data.datasets[0].data.push(responses.mean)
+    responseTimeChart.data.labels.push(responses.timestamp)
 
-    var deltaTime = data.responses.timestamp - rpsChart.data.labels[rpsChart.data.labels.length - 1]
+    const deltaTime =
+      responses.timestamp -
+      rpsChart.data.labels[rpsChart.data.labels.length - 1]
     if (deltaTime > 0) {
-      rpsStat.textContent = (data.responses.count / deltaTime * 1000).toFixed(2)
-      rpsChart.data.datasets[0].data.push(data.responses.count / deltaTime * 1000)
-      rpsChart.data.labels.push(data.responses.timestamp)
+      rpsStat.textContent = ((responses.count / deltaTime) * 1000).toFixed(2)
+      rpsChart.data.datasets[0].data.push((responses.count / deltaTime) * 1000)
+      rpsChart.data.labels.push(responses.timestamp)
     }
 
-    charts.forEach(function (chart) {
+    charts.forEach((chart) => {
       if (spans[defaultSpan].retention < chart.data.labels.length) {
         chart.data.datasets[0].data.shift()
         chart.data.labels.shift()
