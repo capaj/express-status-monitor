@@ -12,4 +12,6 @@ app.use(async function(ctx) {
   }
 })
 
-server.listen(6001)
+server.listen(6001, () => {
+  console.log('http://localhost:6001/')
+})
