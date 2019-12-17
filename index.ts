@@ -173,7 +173,7 @@ const middlewareWrapper = (app: Application, config: Config) => {
         }, config.requestTimeout)
       }
 
-      await next
+      await next()
 
       timer && clearTimeout(timer)
       record.call(ctx)

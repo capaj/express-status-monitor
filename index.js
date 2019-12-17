@@ -291,7 +291,7 @@ var middlewareWrapper = function(app, config) {
                 record.call(ctx, true)
               }, config.requestTimeout)
             }
-            return [4 /*yield*/, next]
+            return [4 /*yield*/, next()]
           case 4:
             _b.sent()
             timer && clearTimeout(timer)
